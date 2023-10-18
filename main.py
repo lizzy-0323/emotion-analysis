@@ -1,5 +1,12 @@
 from train import train_model
+from data_prepare import *
+from model import *
 
 
-if __name__ =='__main__':
+def predict():
+    # TODO：编写预测代码
+    ...
+
+
+if __name__ == "__main__":
     train_model()

@@ -40,7 +40,7 @@ def train_model():
     )
     loss = nn.CrossEntropyLoss()
 
-    print("--------------开始训练--------------")
+    print("===============开始训练===============")
     # 编写训练代码
     train(train_iter, test_iter, net, loss, optimizer, num_epoch)
 
@@ -68,7 +68,7 @@ def train(train_iter, test_iter, model, loss, optimizer, num_epoch):
         end_time = time.time()
         train_time = end_time - start_time
         print(
-            f"=== epoch: {epoch+1}/{num_epoch}, train loss: {avg_train_loss}, train acc: {avg_train_acc}, train time: {train_time}s"
+            f"=== epoch: {epoch+1}/{num_epoch}, train loss: {avg_train_loss}, train acc: {avg_train_acc}, train time: {train_time}s ==="
         )
 
         model.eval()
@@ -87,8 +87,5 @@ def train(train_iter, test_iter, model, loss, optimizer, num_epoch):
         epoch_acces.append(avg_eval_acc)
     print("验证集上的损失为：", min(epoch_losses))
     print("验证集上的准确率为：", max(epoch_acces))
-    print("-------------训练结束---------------")
-
-
-if __name__ == "__main__":
-    train_model()
+    print("==============训练结束==============")
+    torch.save(model.state_dict(), "model.pt")

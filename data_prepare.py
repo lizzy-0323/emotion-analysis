@@ -41,8 +41,8 @@ class ImdbDataset(Dataset):
         random.shuffle(labels)
         # 小样本训练，方便调试
         if is_small:
-            data = data[:2000]
-            labels = labels[:2000]
+            data = data[:100]
+            labels = labels[:100]
         return data, labels
 
     def __len__(self):
