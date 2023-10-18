@@ -7,10 +7,11 @@ from torchtext.vocab import vocab, GloVe
 from tqdm import tqdm
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torch import device
 
-torch.manual_seed(233)
-MAX_VOCAB_SIZE = 25000
+torch.manual_seed(1234)
 BATCH_SIZE = 64
+device = device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class ImdbDataset(Dataset):
@@ -37,9 +38,9 @@ class ImdbDataset(Dataset):
                     text = f.read().decode("utf-8").replace("\n", "").lower()
                     data.append(text)
                     labels.append(1 if label == "pos" else 0)
-        random.shuffle(data)
-        random.shuffle(labels)
-        # 小样本训练，方便调试
+        # random.shuffle(data)
+        # random.shuffle(labels)
+        # 小样本训练，仅用于本机验证
         if is_small:
             data = data[:100]
             labels = labels[:100]
@@ -84,19 +85,16 @@ def get_vocab(data):
 
 def preprocess_imdb(train_data, vocab):
     """数据预处理，将数据转换成神经网络的输入形式"""
-    max_l = 500  # 将每条评论通过截断或者补0，使得长度变成500
+    max_l = 800  # 将每条评论通过截断或者补0，使得长度变成500
 
     def pad(x):
         return x[:max_l] if len(x) > max_l else x + [1] * (max_l - len(x))
 
     labels = train_data.get_labels()
     tokenized_data = get_tokenized(train_data.get_data())
-
+    vocab_dict = vocab.get_stoi()
     features = torch.tensor(
-        [
-            pad([vocab.get_stoi().get(word, 0) for word in words])
-            for words in tokenized_data
-        ]
+        [pad([vocab_dict.get(word, 0) for word in words]) for words in tokenized_data]
     )
     labels = torch.tensor([label for label in labels])
     return features, labels
@@ -104,22 +102,21 @@ def preprocess_imdb(train_data, vocab):
 
 def load_data(batch_size):
     """加载数据集"""
-    train_data = ImdbDataset(is_train=True, is_small=True)
-    # test_data = ImdbDataset(is_train=False, is_small=True)
+    train_data = ImdbDataset(folder_path="./data/aclImdb", is_train=True)
+    test_data = ImdbDataset(folder_path="./data/aclImdb", is_train=False)
     vocab = get_vocab(train_data.get_data())
     train_set = TensorDataset(*preprocess_imdb(train_data, vocab))
     # 20%作为验证集
-    train_set, valid_set = torch.utils.data.random_split(
-        train_set, [int(len(train_set) * 0.8), int(len(train_set) * 0.2)]
-    )
-    # valid_set = TensorDataset(*preprocess_imdb(valid_data, vocab))
-    # test_set = TensorDataset(*preprocess_imdb(test_data, vocab))
+    # train_set, valid_set = torch.utils.data.random_split(
+    #     train_set, [int(len(train_set) * 0.8), int(len(train_set) * 0.2)]
+    # )
+    test_set = TensorDataset(*preprocess_imdb(test_data, vocab))
     train_iter = DataLoader(
         train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=0
     )
-    valid_iter = DataLoader(valid_set, batch_size)
-    # test_iter = DataLoader(test_set, batch_size)
-    return train_iter, valid_iter, vocab
+    # valid_iter = DataLoader(valid_set, batch_size)
+    test_iter = DataLoader(test_set, batch_size)
+    return train_iter, test_iter, vocab
 
 
 if __name__ == "__main__":

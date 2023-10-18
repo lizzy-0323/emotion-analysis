@@ -21,7 +21,6 @@ class LSTM(nn.Module):
         # 所以在获得词元表示之前，输入会被转置。
         # 输出形状为（时间步数，批量大小，词向量维度）
         embeddings = self.embedding(inputs.T)
-        self.encoder.flatten_parameters()
         # 返回上一个隐藏层在不同时间步的隐状态，
         # outputs的形状是（时间步数，批量大小，2*隐藏单元数）
         outputs, _ = self.encoder(embeddings)
@@ -32,7 +31,6 @@ class LSTM(nn.Module):
         return outs
 
 
-# 本函数已保存在d2lzh_torch包中方便以后使用
 def load_pretrained_embedding(words, pretrained_vocab):
     """从预训练好的vocab中提取出words对应的词向量"""
     embed = torch.zeros(len(words), pretrained_vocab.vectors[0].shape[0])  # 初始化为0
@@ -47,27 +45,3 @@ def load_pretrained_embedding(words, pretrained_vocab):
         print("There are %d oov words.")
     return embed
 
-
-if __name__ == "__main__":
-    DATA_ROOT = "../dataset"
-    embed_size, num_hiddens, num_layers = 100, 100, 2
-    train_data = ImdbDataset(is_train=True, is_small=True)
-    test_data = ImdbDataset(is_train=False, is_small=True)
-    vocab = get_vocab(train_data.get_data())
-    net = LSTM(len(vocab), embed_size, num_hiddens, num_layers)
-    glove_vocab = GloVe(name="6B", dim=100, cache=os.path.join(DATA_ROOT, "glove"))
-    net.embedding.weight.data.copy_(
-        load_pretrained_embedding(vocab.get_itos(), glove_vocab)
-    )
-    net.embedding.weight.requires_grad = False  # 直接加载预训练好的, 所以不需要更新它
-
-    def init_weights(m):
-        if type(m) == nn.Linear:
-            nn.init.xavier_uniform_(m.weight)
-        if type(m) == nn.LSTM:
-            for param in m._flat_weights_names:
-                if "weight" in param:
-                    nn.init.xavier_uniform_(m._parameters[param])
-
-    net.apply(init_weights)
-    print("模型初始化完成")
